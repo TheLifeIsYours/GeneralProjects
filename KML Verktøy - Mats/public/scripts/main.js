@@ -101,7 +101,7 @@ class LeafletMap {
     init(){
         L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
             attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
-            maxZoom: 13,
+            maxZoom: 10,
             id: 'mapbox/streets-v11',
             tileSize: 512,
             zoomOffset: -1,
@@ -114,25 +114,16 @@ class LeafletMap {
     }
 
     updateMarkers(){
-        let zoom = this.map.getZoom();
         let prev = null;
+        
+        let zoomSensetivity = this._map(this.rangeA.value, this.rangeA.min, this.rangeA.max, 10, 0.00001);
+        let overlapDist = this._map(leafletMap.map.getZoom(), -15, 10, zoomSensetivity, 0.0001)
 
         this.iconsArray.forEach((icon, index) => {
-            
-            
             if(prev != null) {
                 let dist = this.dist(icon.options.latlng, prev);
-                let zoomSensetivity = this._map(this.rangeA.value, this.rangeA.min, this.rangeA.max, 10, 0.00001);
-                let overlapDist = this._map(leafletMap.map.getZoom(), -15, 12, zoomSensetivity, 0.0001)
 
-                // dist = 5 * ----- *
-                // zoom = 5
-                // om dist * (zoom * 0.01) > 0.01
-
-                console.log(zoom, dist,  overlapDist);
-                console.log(dist >  overlapDist);
-                
-                if(dist < overlapDist) {
+                if(dist < overlapDist && index != (0 || this.iconsArray.length - 1)) {
                     this.toggleMarker(icon, true);
                 } else {
                     this.toggleMarker(icon, false);
