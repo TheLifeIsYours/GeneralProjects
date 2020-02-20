@@ -1,0 +1,71 @@
+html, body {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: none;
+}
+
+body {
+    display: flex;
+    flex-flow: column;
+
+    background: #272727;
+    font-family: Arial, sans-serif;
+    color: #e2e2e2;
+}
+
+#kmlForm {
+    display: flex;
+    flex-flow: row;
+    align-items: center;
+    justify-content: start;
+    margin: 1em;
+}
+
+#kmlForm > * {
+    margin: 0.5em;
+}
+
+#mapid {
+    display: flex;
+    flex-flow: column;
+    flex-grow: 1;
+    margin: 1em;
+}
+
+#zoomSens-controller {
+    display: flex;
+    flex-flow: row;
+    align-items: center;
+}
+
+.leaflet-goose-icon {
+    width: fit-content;
+    height: fit-content;
+}
+
+.leaflet-goose-icon > div{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    background:url("../images/goose.png");
+    background-size: contain;
+    background-repeat: no-repeat;
+    
+    color: #222;
+    width: 100%;
+    height: 100%;
+}
+
+.leaflet-goose-icon > div > b {
+    position: relative;
+    display: block;
+    width: max-content;
+    margin: 1.5em;
+}
+
+.hidden {
+    display: none!important;
+}
