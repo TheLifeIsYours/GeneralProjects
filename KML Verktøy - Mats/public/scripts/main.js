@@ -6,6 +6,8 @@ window.onload = () => {
 class KMLDateStripper{
     constructor(){
         this.kmlFile = document.querySelector("#kmlFile");
+        this.kmlData = null;
+
         this.displayKML = document.querySelector("#displayKML");
         this.stripButton = document.querySelector("#stripDate");
         
@@ -14,30 +16,34 @@ class KMLDateStripper{
         };
         
         this.kmlFile.addEventListener('drop', (evt) => {
-          this.kmlFile.files = evt.dataTransfer.files;
+            this.kmlFile.files = evt.dataTransfer.files;
 
-          window.leafletMap.displayKML(this.kmlFile.files[0]);
-          evt.preventDefault();
+            this.uploadFile();
+            evt.preventDefault();
         });
 
         this.kmlFile.addEventListener('change', () => {
-            window.leafletMap.displayKML(this.kmlFile.files[0]);
+            this.uploadFile();
         })
         
         this.stripButton.addEventListener('click', () => {
-            this.uploadFile();
+            this.downloadFile();
         });
     }
         
-    uploadFile(){
+    async uploadFile(){
         for(let file of kmlFile.files) {
             if(file.name.includes(".kmz")) {
-                this.unzipKMZ(file);
+                let _kmlfile = await this.unzipKMZ(file);
+                this.kmlData = this.stripDate(_kmlfile);
+
+                window.leafletMap.displayKML(this.kmlData);
             } else {
                 let reader = new FileReader();
                 
                 reader.onload = (e) => {
-                    this.stripDate(e.target.result);
+                    this.kmlData = this.stripDate(e.target.result);
+                    window.leafletMap.displayKML(this.kmlData);
                 }
                 
                 reader.readAsBinaryString(file);
@@ -56,14 +62,16 @@ class KMLDateStripper{
             return new TextDecoder("utf-8").decode(kmlData);
         });
         
-        this.stripDate(KMLData);
+        return KMLData;
     }
     
     stripDate(kmlData) {
-        kmlData = kmlData.replace(/(?!<name>\d\d\d\d-\d\d-\d\d) \d\d:\d\d:\d\d(?=<\/name>)/gm, '');
-        
+        return kmlData.replace(/(?!<name>\d\d\d\d-\d\d-\d\d) \d\d:\d\d:\d\d(?=<\/name>)/gm, '');
+    }
+
+    downloadFile(){
         let download = document.createElement('a');
-        download.href = `data:text/plain;charset=utf-8,${encodeURIComponent(kmlData)}`;
+        download.href = `data:text/plain;charset=utf-8,${encodeURIComponent(this.kmlData)}`;
         download.download = "view.kml";
         download.click();
     }
@@ -87,6 +95,7 @@ class LeafletMap {
     constructor(parent){
         this.container = document.querySelector('#mapid');
         this.rangeA = document.querySelector("#range_a");
+        this.currentLayer = null;
 
         this.rangeA.addEventListener('change', () => {
             this.updateMarkers();
@@ -154,7 +163,19 @@ class LeafletMap {
     }
 
     async displayKML(kmlFile){
-        let kmlData = await window.kmlStripper.readFileAsync(kmlFile);
+        let kmlData;
+
+        console.log(this.currentLayer);
+        if(this.currentLayer != null) {
+            this.map.removeLayer(this.currentLayer);
+            this.iconsArray = [];
+        }
+
+        if(typeof(kmlFile) == "string") {
+            kmlData = kmlFile;    
+        } else {
+            kmlData = await window.kmlStripper.readFileAsync(kmlFile);
+        }
 
         let gooseIcon = (feature, latlng) => {
             let icon = L.divIcon({
@@ -164,7 +185,6 @@ class LeafletMap {
                 id: "goose-icon-"+this.iconsArray.length,
                 latlng: latlng
             });
-            console.log(icon);
 
             this.iconsArray.push(icon);
             return icon;
@@ -176,7 +196,9 @@ class LeafletMap {
             }
         });
 
-        omnivore.kml.parse(kmlData, null, omnivoreStyleHelper).addTo(this.map);
+        this.currentLayer = omnivore.kml.parse(kmlData, null, omnivoreStyleHelper);
+        this.currentLayer.addTo(this.map);
+
         this.updateMarkers();
     }
 }
