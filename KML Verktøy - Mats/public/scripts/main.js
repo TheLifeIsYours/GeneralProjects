@@ -35,6 +35,8 @@ class KMLDateStripper{
         for(let file of kmlFile.files) {
             if(file.name.includes(".kmz")) {
                 let _kmlfile = await this.unzipKMZ(file);
+                console.log(_kmlfile);
+
                 this.kmlData = this.stripDate(_kmlfile);
 
                 window.leafletMap.displayKML(this.kmlData);
@@ -58,7 +60,13 @@ class KMLDateStripper{
         
         let KMLData = await zip.loadAsync(KMZData)
         .then(async (res) => {
-            let kmlData = await res.file("view.kml").async("uint8array");
+            let kmlData = await (()=> {
+                console.log(res.files);
+                for(let file in res.files){
+                    return res.file(file).async("uint8array");
+                }
+            })();
+
             return new TextDecoder("utf-8").decode(kmlData);
         });
         
@@ -95,10 +103,16 @@ class LeafletMap {
     constructor(parent){
         this.container = document.querySelector('#mapid');
         this.rangeA = document.querySelector("#range_a");
+        this.rangeB = document.querySelector("#range_b");
+
         this.currentLayer = null;
 
         this.rangeA.addEventListener('change', () => {
             this.updateMarkers();
+        });
+
+        this.rangeB.addEventListener('change', () => {
+            //this.updateMarkerIcon();
         });
 
         this.map = new L.map(this.container).setView([50, -30], 3);
@@ -110,7 +124,7 @@ class LeafletMap {
     init(){
         L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
             attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
-            maxZoom: 10,
+            maxZoom: 15,
             id: 'mapbox/streets-v11',
             tileSize: 512,
             zoomOffset: -1,
@@ -122,11 +136,26 @@ class LeafletMap {
         });
     }
 
+    updateMarkerIcon(){
+        this.iconsArray.forEach((icon, index) => {
+            let iconElement = document.querySelector(`#${icon.options.id}`);
+
+            iconElement.classList.forEach((attr) => {
+                console.log(attr);
+
+                if(attr != "hidden")
+                iconElement.classList.remove(attr);
+            });
+
+            iconElement.classList.add(`marker-icon-${this.rangeB.value}`);
+        });
+    }
+
     updateMarkers(){
         let prev = null;
         
-        let zoomSensetivity = this._map(this.rangeA.value, this.rangeA.min, this.rangeA.max, 10, 0.00001);
-        let overlapDist = this._map(leafletMap.map.getZoom(), -15, 10, zoomSensetivity, 0.0001)
+        let zoomSensetivity = this._map(this.rangeA.value, this.rangeA.min, this.rangeA.max, 7, 0.00001);
+        let overlapDist = this._map(leafletMap.map.getZoom(), -15, 8, zoomSensetivity, 0.00001)
 
         this.iconsArray.forEach((icon, index) => {
             if(prev != null) {
@@ -180,8 +209,8 @@ class LeafletMap {
         let gooseIcon = (feature, latlng) => {
             let icon = L.divIcon({
                 className: 'leaflet-goose-icon',
-                iconSize: [30, 50],
-                html: `<div id="goose-icon-${this.iconsArray.length}"><b>${feature.properties.name}</b></div>`,
+                iconSize: [20, 30],
+                html: `<div id="goose-icon-${this.iconsArray.length}" class="marker-icon-${this.rangeB.value}"><b>${feature.properties.name}</b></div>`,
                 id: "goose-icon-"+this.iconsArray.length,
                 latlng: latlng
             });
